@@ -6,20 +6,8 @@ import OlView from 'ol/View';
 import OlTile from 'ol/layer/Tile'
 import OSM from 'ol/source/OSM'
 import { useEffect, useRef } from 'react';
-import { Overlay } from 'ol'
-import { DragRotate, Draw } from 'ol/interaction'
-import { altKeyOnly, altShiftKeysOnly } from 'ol/events/condition'
-import { GeoJSON } from 'ol/format'
-import { DrawEvent } from 'ol/interaction/Draw'
-import {
-  defaults,
-  FullScreen,
-  OverviewMap,
-  ScaleLine,
-  ZoomSlider,
-  ZoomToExtent
-} from 'ol/control'
-import MousePosition from 'ol/control/MousePosition'
+import { Group } from 'ol/layer'
+import { Tile } from 'ol'
 
 function App() {
   const overlay = useRef<HTMLParagraphElement>(null);
@@ -31,92 +19,46 @@ function App() {
 
 
   function init() {
-    let fullScreenControl = new FullScreen()
-    let mousePositionControl = new MousePosition()
-
-    let overviewMapControl = new OverviewMap({
-      collapsed: false,
-      layers: [
-        new OlTile({
-          source: new OSM({
-            maxZoom: 20
-          }),
-
-        })
-      ],
-    })
-
-    const scaleLineControl = new ScaleLine()
-    const zoomSliderControl = new ZoomSlider()
-    const zoomToExtentControl = new ZoomToExtent()
-
     const map = new OlMap({
       view: new OlView({
-        center: [-12080385, 7567433],
-        zoom: 3,
-        maxZoom: 6,
-        minZoom: 2,
-        rotation: 0,
+        center: [14146577.196213575, 4514003.151265755],
+        zoom: 13,
+        extent: [13903350.6805021, 4059443.273146776, 14458599.200649295, 4667156.220394493]
+
       }),
       layers: [
         new OlTile({
-          source: new OSM()
+          source: new OSM(),
+          zIndex: 1,
+          visible: true,
+          extent: [13903350.6805021, 4059443.273146776, 14458599.200649295, 4667156.220394493],
+          opacity: 0.5
         })
       ],
-      target: mapRef.current || undefined,
-      keyboardEventTarget: document,
-      controls: defaults().extend([
-        fullScreenControl,
-        mousePositionControl,
-        overviewMapControl,
-        scaleLineControl,
-        zoomSliderControl,
-        zoomToExtentControl
-      ])
+      target: mapRef.current || undefined
     })
-
-    const popup = new Overlay({
-      element: overlay.current || undefined,
-      positioning: "top-right"
-    });
-
-    map.addOverlay((popup));
-
-    map.on('click', event => {
-      let clickedCoordinate = event.coordinate
-      popup.setPosition(undefined);
-      popup.setPosition(clickedCoordinate);
-      if (overlay.current) {
-        overlay.current.innerHTML = clickedCoordinate.toString();
-      }
-    });
-
-    const dragRotateInteraction = new DragRotate({
-      condition: altKeyOnly
-    });
-
-    map.addInteraction(dragRotateInteraction);
-
-    const drawInteraction = new Draw({
-      type: "Polygon",
-      freehand: true
+    const layerGroup = new Group({
+      layers: [
+        new OlTile({
+          source: new OSM({
+            url: "https://{a-c}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
+          }),
+          zIndex: 0,
+          visible: false,
+          opacity: 0.1
+        })
+      ]
     })
-
-    map.addInteraction(drawInteraction);
-
-    drawInteraction.on('drawend', (e: DrawEvent) => {
-
-      const parser = new GeoJSON();
-      const drawnFeatures = parser.writeFeaturesObject([e.feature]);
-      console.log(drawnFeatures.features[0].geometry.coordinates);
-    });
-
+    map.addLayer(layerGroup);
+    map.on('click', (e) => {
+      console.log(e.coordinate);
+    })
   }
 
   return (
     <div className="App">
       <div id="popup-container">
-        <p ref={overlay}/>
+        <p style={{margin: 0, padding: 0}} ref={overlay}/>
       </div>
       <div ref={mapRef} className="map"/>
     </div>
